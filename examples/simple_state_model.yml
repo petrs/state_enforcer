@@ -1,0 +1,44 @@
+###########################
+# GENERAL CONFIGURATION   #
+###########################
+
+config:
+  package_name: yourpackage
+
+###########################
+# SPECIAL STATES AND FNCS #
+###########################
+
+states_special:
+  anytime_call: [getVersion, blockCard]
+  anytime_reach: [STATE_CARD_BLOCKED]
+
+#####################
+# STATE TRANSITIONS #
+#####################
+
+states_transitions:
+
+  STATE_APPLET_UPLOADED:
+    install: STATE_INSTALLED
+
+  STATE_INSTALLED:
+    generateKeyPair: STATE_KEYPAIR_GENERATED
+    blockCard: STATE_CARD_BLOCKED
+
+  STATE_KEYPAIR_GENERATED:
+    verifyPIN: STATE_USER_AUTHENTICATED
+    blockCard: STATE_CARD_BLOCKED
+
+  STATE_USER_AUTHENTICATED:
+    sign: STATE_USER_AUTHENTICATED
+    reset: STATE_KEYPAIR_GENERATED
+    blockCard: STATE_CARD_BLOCKED
+  
+
+
+
+
+
+
+  

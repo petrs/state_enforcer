@@ -1,0 +1,24 @@
+// State model
+digraph {
+	graph [fontsize=30 label="Source yaml file: examples\\simple_state_model.yml" labelloc=t]
+	rankdir=LR size="8,5"
+	STATE_APPLET_UPLOADED -> STATE_INSTALLED [label="install()" color=orange style=solid]
+	STATE_INSTALLED -> STATE_KEYPAIR_GENERATED [label="generateKeyPair()" color=orange style=solid]
+	STATE_INSTALLED -> STATE_CARD_BLOCKED [label="blockCard()" color=orange style=solid]
+	STATE_KEYPAIR_GENERATED -> STATE_USER_AUTHENTICATED [label="verifyPIN()" color=orange style=solid]
+	STATE_KEYPAIR_GENERATED -> STATE_CARD_BLOCKED [label="blockCard()" color=orange style=solid]
+	STATE_USER_AUTHENTICATED -> STATE_USER_AUTHENTICATED [label="sign()" color=orange style=solid]
+	STATE_USER_AUTHENTICATED -> STATE_KEYPAIR_GENERATED [label="reset()" color=orange style=solid]
+	STATE_USER_AUTHENTICATED -> STATE_CARD_BLOCKED [label="blockCard()" color=orange style=solid]
+	node [color=green]
+	node [style=filled]
+	anytime_call
+	anytime_call -> anytime_call [label="getVersion()" color=orange style=dotted]
+	anytime_call -> anytime_call [label="blockCard()" color=orange style=dotted]
+	node [color=green]
+	node [style=filled]
+	anytime_reach
+	node [color=gray]
+	node [style=filled]
+	anytime_reach -> STATE_CARD_BLOCKED [color=orange style=dotted]
+}
