@@ -3,11 +3,12 @@ from graphviz import Graph
 import yaml
 import sys
 
-VERSION = '2019.10.24'
+VERSION = '2019.11.27'
 
 YAML_TAG_CONFIGURATION = 'config'
 YAML_TAG_STATES_SPECIAL = 'states_special'
 YAML_TAG_STATES_TRANSITIONS = 'states_transitions'
+YAML_TAG_SECONDARY_STATE_CHECK = 'secondary_state_check'
 
 YAML_TAG_ANYTIME_CALL = 'anytime_call'
 YAML_TAG_ANYTIME_REACH = 'anytime_reach'
@@ -69,6 +70,7 @@ def generate_graph(state_model_complete, state_model_file, out_folder):
 
 def generate_java_code(state_model_complete, package_name, out_folder):
     state_model = []
+    secondary_state_check_model = []
     if YAML_TAG_STATES_TRANSITIONS in state_model_complete:
         state_model = state_model_complete[YAML_TAG_STATES_TRANSITIONS]
 
@@ -76,6 +78,8 @@ def generate_java_code(state_model_complete, package_name, out_folder):
     if YAML_TAG_STATES_SPECIAL in state_model_complete:
         state_model_special = state_model_complete[YAML_TAG_STATES_SPECIAL]
 
+    if YAML_TAG_SECONDARY_STATE_CHECK in state_model_complete:
+        secondary_state_check_model = state_model_complete[YAML_TAG_SECONDARY_STATE_CHECK]
 
     #
     # Header
@@ -116,6 +120,11 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                 if state_name not in all_states:
                     all_states.append(state_name)
 
+        # include also secondary models check
+        for state_name in secondary_state_check_model:
+            if state_name not in all_states:
+                all_states.append(state_name)
+
         all_states.sort()
 
         const_index = 1
@@ -145,6 +154,10 @@ def generate_java_code(state_model_complete, package_name, out_folder):
             for fnc_name in anytime_allowed:
                 if fnc_name not in sorted_unique_fncs:
                     sorted_unique_fncs.append(fnc_name)
+        for state_name in secondary_state_check_model:
+            for fnc in secondary_state_check_model[state_name]:
+                if fnc not in sorted_unique_fncs:
+                    sorted_unique_fncs.append(fnc)
         sorted_unique_fncs.sort()
 
         const_index = 1 + 0x4000 # function constants prefix
@@ -168,18 +181,26 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         print('\n\n')
 
         value = "\n\n    private short STATE_CURRENT = STATE_UNSPECIFIED;\n\n" \
+                + "    private short STATE_SECONDARY = STATE_UNSPECIFIED;\n\n" \
                 + "" \
                 + "    public StateModel(short startState) {\n" \
                 + "        STATE_CURRENT = startState;\n" \
                 + "    }\n" \
                 + "    \n" \
                 + "    public void checkAllowedFunction(short requestedFnc) {\n" \
+                + "        // Check allowed function in current state\n" \
                 + "        checkAllowedFunction(requestedFnc, STATE_CURRENT);\n" \
+                + "        // // Check secondary state (if required)\n" \
+                + "        checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);\n" \
                 + "    }\n" \
                 + "    \n" \
                 + "    public short changeState(short newState) {\n" \
                 + "        STATE_CURRENT = changeState(STATE_CURRENT, newState);\n" \
                 + "        return STATE_CURRENT;\n" \
+                + "    }\n" \
+                + "    public short setSecondaryState(short newSecondaryState) {\n" \
+                + "        STATE_SECONDARY = newSecondaryState;\n" \
+                + "        return STATE_SECONDARY;\n" \
                 + "    }\n" \
                 + "    \n" \
                 + "    public short getState() {\n" \
@@ -234,6 +255,67 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                 + "    }\n\n"
 
         file.write(value)
+
+
+
+
+
+
+
+        #
+        # checkAllowedFunctionSecondary
+        value = "    private static void checkAllowedFunctionSecondary(short requestedFnc, short currentSecondaryState) {\n"
+        value += "        // Check for functions which can be called from any state\n" \
+                 + "        switch (requestedFnc) {\n" \
+                 + "            // case FNC_someFunction:  return;    // enable if FNC_someFunction can be called from any state (typical for cleaning instructions)\n"
+
+        anytime_allowed = []
+        if YAML_TAG_ANYTIME_CALL in state_model_special:
+            anytime_allowed = state_model_special[YAML_TAG_ANYTIME_CALL]
+
+        for fnc in anytime_allowed:
+            value += "            case FNC_{}:  return;\n".format(fnc)
+
+        value += "        }\n\n"
+        file.write(value)
+
+        value = "        // Check if function can be called from current state\n" \
+                + "        switch (currentSecondaryState) {\n"
+        file.write(value)
+
+        # Allowed functions in a given state
+        for state in secondary_state_check_model.keys():
+            # case for current state
+            message = "            case {}:\n".format(state)
+            file.write(message)
+
+            fncs_set = set(secondary_state_check_model[state])
+            sorted_fncs = sorted(fncs_set)
+            for function in sorted_fncs:
+                if len(function) > 0:
+                    message = "{}{}{}{}if (requestedFnc == FNC_{}) return;\n".format(indent, indent, indent, indent, function)
+                    file.write(message)
+
+            # end current case
+            message = "                ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state\n" \
+                      + "                break;\n" \
+                      + ""
+            file.write(message)
+
+        value = "            default:\n" \
+                + "                ISOException.throwIt(SW_UNKNOWNSTATE);\n" \
+                + "                break;\n" \
+                + "       }\n" \
+                + "    }\n\n"
+
+        file.write(value)
+
+
+
+
+
+
+
 
         #
         # Allowed state transitions in a given state
@@ -298,7 +380,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
 
 
 def print_help():
-    print('StateEnforcer, version ' + VERSION)
+    print('state_enforcer, version ' + VERSION)
     print('Petr Svenda, 2019')
     print('Reads state transition model from yaml file, generates .dot visualization and Java enforcement methods \n' 
             'checking allowed state transitions and allowed function calls for the current state.')
