@@ -92,10 +92,10 @@ def generate_java_code(state_model_complete, package_name, out_folder):
     header += "\n"
     header += "import javacard.framework.ISOException;\n"
     header += "\npublic class StateModel {\n\n"
-    header += "    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x8001;\n" \
-              "    public static final short SW_UNKNOWNSTATE                           = (short) 0x8002;\n" \
-              "    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x8003;\n" \
-              "    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x8004;\n\n\n" \
+    header += "    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9af0;\n" \
+              "    public static final short SW_UNKNOWNSTATE                           = (short) 0x9af1;\n" \
+              "    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9af2;\n" \
+              "    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9af3;\n\n\n" \
               "    // States constants\n" \
               "    public static final short STATE_UNSPECIFIED                         = (short) 0x5050;\n"
 
