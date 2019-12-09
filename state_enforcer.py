@@ -219,7 +219,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         if YAML_TAG_ANYTIME_CALL in state_model_special:
             anytime_allowed = state_model_special[YAML_TAG_ANYTIME_CALL]
 
-        for fnc in anytime_allowed:
+        for fnc in sorted(anytime_allowed):
             value += "            case FNC_{}:  return;\n".format(fnc)
 
         value += "        }\n\n"
@@ -230,13 +230,13 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         file.write(value)
 
         # Allowed functions in a given state
-        for state in state_model:
+        for state in sorted(state_model.keys()):
             # case for current state
             message = "            case {}:\n".format(state)
             file.write(message)
 
             fncs_set = set(state_model[state])
-            sorted_fncs = list(fncs_set)
+            sorted_fncs = sorted(fncs_set)
             for function in sorted_fncs:
                 if len(function) > 0:
                     message = "{}{}{}{}if (requestedFnc == FNC_{}) return;\n".format(indent, indent, indent, indent, function)
@@ -273,7 +273,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         if YAML_TAG_ANYTIME_CALL in state_model_special:
             anytime_allowed = state_model_special[YAML_TAG_ANYTIME_CALL]
 
-        for fnc in anytime_allowed:
+        for fnc in sorted(anytime_allowed):
             value += "            case FNC_{}:  return;\n".format(fnc)
 
         value += "        }\n\n"
@@ -284,7 +284,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         file.write(value)
 
         # Allowed functions in a given state
-        for state in secondary_state_check_model.keys():
+        for state in sorted(secondary_state_check_model.keys()):
             # case for current state
             message = "            case {}:\n".format(state)
             file.write(message)
@@ -327,7 +327,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         anytime_allowed = []
         if YAML_TAG_ANYTIME_REACH in state_model_special:
             anytime_allowed = state_model_special[YAML_TAG_ANYTIME_REACH]
-        for state in anytime_allowed:
+        for state in sorted(anytime_allowed):
             value += "            case {}: return newState;\n".format(state)
 
         value += "        }\n\n"
@@ -337,13 +337,13 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         value = "        switch (currentState) {\n"
         file.write(value)
 
-        for state in state_model:
+        for state in sorted(state_model.keys()):
             # case for current state
             message = "            case {}:\n".format(state)
             file.write(message)
 
             fncs_set = set(state_model[state])
-            sorted_fncs = list(fncs_set)
+            sorted_fncs = sorted(fncs_set)
             sorted_states = []
             for fnc in sorted_fncs:
                 if state_model[state][fnc] not in sorted_states:
