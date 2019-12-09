@@ -74,19 +74,21 @@ import javacard.framework.ISOException;
 
 public class StateModel {
 
-    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x8001;
-    public static final short SW_UNKNOWNSTATE                           = (short) 0x8002;
-    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x8003;
-    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x8004;
+    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9af0;
+    public static final short SW_UNKNOWNSTATE                           = (short) 0x9af1;
+    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9af2;
+    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9af3;
 
 
     // States constants
     public static final short STATE_UNSPECIFIED                         = (short) 0x5050;
-    public static final short STATE_APPLET_UPLOADED                     = (short) 0x0001;
-    public static final short STATE_CARD_BLOCKED                        = (short) 0x0002;
-    public static final short STATE_INSTALLED                           = (short) 0x0003;
-    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x0004;
-    public static final short STATE_USER_AUTHENTICATED                  = (short) 0x0005;
+    public static final short CHANNEL_NONE                              = (short) 0x0001;
+    public static final short SECURE_CHANNEL_ESTABLISHED                = (short) 0x0002;
+    public static final short STATE_APPLET_UPLOADED                     = (short) 0x0003;
+    public static final short STATE_CARD_BLOCKED                        = (short) 0x0004;
+    public static final short STATE_INSTALLED                           = (short) 0x0005;
+    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x0006;
+    public static final short STATE_USER_AUTHENTICATED                  = (short) 0x0007;
 
     // Functions constants
     public static final short FNC_blockCard                             = (short) 0x4001;
@@ -100,17 +102,26 @@ public class StateModel {
 
     private short STATE_CURRENT = STATE_UNSPECIFIED;
 
+    private short STATE_SECONDARY = STATE_UNSPECIFIED;
+
     public StateModel(short startState) {
         STATE_CURRENT = startState;
     }
     
     public void checkAllowedFunction(short requestedFnc) {
+        // Check allowed function in current state
         checkAllowedFunction(requestedFnc, STATE_CURRENT);
+        // // Check secondary state (if required)
+        checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);
     }
     
     public short changeState(short newState) {
         STATE_CURRENT = changeState(STATE_CURRENT, newState);
         return STATE_CURRENT;
+    }
+    public short setSecondaryState(short newSecondaryState) {
+        STATE_SECONDARY = newSecondaryState;
+        return STATE_SECONDARY;
     }
     
     public short getState() {
@@ -121,8 +132,8 @@ public class StateModel {
         // Check for functions which can be called from any state
         switch (requestedFnc) {
             // case FNC_someFunction:  return;    // enable if FNC_someFunction can be called from any state (typical for cleaning instructions)
-            case FNC_getVersion:  return;
             case FNC_blockCard:  return;
+            case FNC_getVersion:  return;
         }
 
         // Check if function can be called from current state
@@ -132,8 +143,8 @@ public class StateModel {
                 ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
                 break;
             case STATE_INSTALLED:
-                if (requestedFnc == FNC_generateKeyPair) return;
                 if (requestedFnc == FNC_blockCard) return;
+                if (requestedFnc == FNC_generateKeyPair) return;
                 ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
                 break;
             case STATE_KEYPAIR_GENERATED:
@@ -142,9 +153,37 @@ public class StateModel {
                 ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
                 break;
             case STATE_USER_AUTHENTICATED:
-                if (requestedFnc == FNC_sign) return;
-                if (requestedFnc == FNC_reset) return;
                 if (requestedFnc == FNC_blockCard) return;
+                if (requestedFnc == FNC_reset) return;
+                if (requestedFnc == FNC_sign) return;
+                ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
+                break;
+            default:
+                ISOException.throwIt(SW_UNKNOWNSTATE);
+                break;
+       }
+    }
+
+    private static void checkAllowedFunctionSecondary(short requestedFnc, short currentSecondaryState) {
+        // Check for functions which can be called from any state
+        switch (requestedFnc) {
+            // case FNC_someFunction:  return;    // enable if FNC_someFunction can be called from any state (typical for cleaning instructions)
+            case FNC_blockCard:  return;
+            case FNC_getVersion:  return;
+        }
+
+        // Check if function can be called from current state
+        switch (currentSecondaryState) {
+            case CHANNEL_NONE:
+                if (requestedFnc == FNC_blockCard) return;
+                if (requestedFnc == FNC_install) return;
+                if (requestedFnc == FNC_reset) return;
+                ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
+                break;
+            case SECURE_CHANNEL_ESTABLISHED:
+                if (requestedFnc == FNC_generateKeyPair) return;
+                if (requestedFnc == FNC_sign) return;
+                if (requestedFnc == FNC_verifyPIN) return;
                 ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state
                 break;
             default:
@@ -188,6 +227,7 @@ public class StateModel {
        ISOException.throwIt(SW_INCORRECTSTATETRANSITION); // if reached, transition is not allowed
        return newState;
     }
+
 }
 ```
 
