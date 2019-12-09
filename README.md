@@ -52,6 +52,18 @@ states_transitions:
     sign: STATE_USER_AUTHENTICATED
     reset: STATE_KEYPAIR_GENERATED
     blockCard: STATE_CARD_BLOCKED
+
+  
+############################
+# SECONDARY STATE CHECKING #
+############################
+
+secondary_state_check:
+
+  SECURE_CHANNEL_ESTABLISHED: [generateKeyPair, verifyPIN, sign]
+
+  CHANNEL_NONE: [install, blockCard, reset]
+ 
 ```
 
 Execute state_enforcer.py which will produce the following files: state_model.dot, state_model.dot.pdf, StateModel.java
