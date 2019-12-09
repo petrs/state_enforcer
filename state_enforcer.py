@@ -3,7 +3,7 @@ from graphviz import Graph
 import yaml
 import sys
 
-VERSION = '2019.11.27'
+VERSION = '2019.12.09'
 
 YAML_TAG_CONFIGURATION = 'config'
 YAML_TAG_STATES_SPECIAL = 'states_special'
