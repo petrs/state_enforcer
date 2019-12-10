@@ -6,6 +6,7 @@ import sys
 VERSION = '2019.12.09'
 
 YAML_TAG_CONFIGURATION = 'config'
+YAML_TAG_CONFIGURATION_COLORING = 'coloring'
 YAML_TAG_STATES_SPECIAL = 'states_special'
 YAML_TAG_STATES_TRANSITIONS = 'states_transitions'
 YAML_TAG_SECONDARY_STATE_CHECK = 'secondary_state_check'
@@ -20,6 +21,14 @@ def path_leaf(path):
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
 
+
+def get_edge_color(fnc, state_model):
+    if YAML_TAG_CONFIGURATION_COLORING in state_model[YAML_TAG_CONFIGURATION]:
+        if fnc in state_model[YAML_TAG_CONFIGURATION][YAML_TAG_CONFIGURATION_COLORING]:
+            return state_model[YAML_TAG_CONFIGURATION][YAML_TAG_CONFIGURATION_COLORING][fnc]
+
+    # if no match found, return default color
+    return 'orange'
 
 def generate_graph(state_model_complete, state_model_file, out_folder):
     #
@@ -38,7 +47,8 @@ def generate_graph(state_model_complete, state_model_file, out_folder):
         for fnc in state_model[start_state]:
             final_state = state_model[start_state][fnc]
             label = fnc + '()'
-            dot.edge(start_state, final_state, color='orange', style='solid', label=label)
+            edge_color = get_edge_color(fnc, state_model_complete)
+            dot.edge(start_state, final_state, color=edge_color, style='solid', label=label)
 
     #
     # display special states/transitions
