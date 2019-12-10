@@ -1,6 +1,6 @@
 // State model
 digraph {
-	graph [fontsize=30 label="Source yaml file: examples\\simple_state_model.yml" labelloc=t]
+	graph [fontsize=30 label="Source yaml file: examples/simple_state_model.yml" labelloc=t]
 	rankdir=LR size="8,5"
 	STATE_APPLET_UPLOADED -> STATE_INSTALLED [label="install()" color=orange style=solid]
 	STATE_INSTALLED -> STATE_KEYPAIR_GENERATED [label="generateKeyPair()" color=orange style=solid]
