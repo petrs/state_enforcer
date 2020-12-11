@@ -102,12 +102,12 @@ def generate_java_code(state_model_complete, package_name, out_folder):
     header += "\n"
     header += "import javacard.framework.ISOException;\n"
     header += "\npublic class StateModel {\n\n"
-    header += "    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9af0;\n" \
-              "    public static final short SW_UNKNOWNSTATE                           = (short) 0x9af1;\n" \
-              "    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9af2;\n" \
-              "    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9af3;\n\n\n" \
+    header += "    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9AF0;\n" \
+              "    public static final short SW_UNKNOWNSTATE                           = (short) 0x9AF1;\n" \
+              "    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9AF2;\n" \
+              "    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9AF3;\n\n\n" \
               "    // States constants\n" \
-              "    public static final short STATE_UNSPECIFIED                         = (short) 0x5050;\n"
+              "    public static final short STATE_UNSPECIFIED                         = (short) 0xF0F0;\n"
 
     with open(file_name, "w") as file:
         file.write(header)
@@ -137,7 +137,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
 
         all_states.sort()
 
-        const_index = 1
+        MAX_SHORT = 32768
+        const_step = round(MAX_SHORT / (len(all_states) + 1))
+        const_index = const_step
         print("INFO: {} unique states found:".format(len(all_states)))
         for state_name in all_states:
             # constant for current state
@@ -147,9 +149,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                 message += " "
                 remaining_padd -= 1
 
-            message += "= (short) 0x{:04X};\n".format(const_index)
+            message += "= (short) 0x{:04X}; // {}\n".format(const_index, f"{const_index:016b}")
             file.write(message)
-            const_index += 1
+            const_index += const_step
 
             print(state_name)
 
@@ -170,7 +172,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                     sorted_unique_fncs.append(fnc)
         sorted_unique_fncs.sort()
 
-        const_index = 1 + 0x4000 # function constants prefix
+        const_step = round(MAX_SHORT / (len(sorted_unique_fncs) + 1))
+        const_index = const_step
+        #const_index = 1 + 0x4000 # function constants prefix
         print("\nINFO: {} unique functions found:".format(len(sorted_unique_fncs)))
         file.write("\n    // Functions constants\n")
         for fnc in sorted_unique_fncs:
@@ -182,9 +186,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                     message += " "
                     remaining_padd -= 1
 
-                message += "= (short) 0x{:04X};\n".format(const_index)
+                message += "= (short) 0x{:04X}; // {}\n".format(const_index, f"{const_index:016b}")
                 file.write(message)
-                const_index += 1
+                const_index += const_step
 
                 print(fnc)
 
