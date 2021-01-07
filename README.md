@@ -10,6 +10,10 @@ Visualize program states transitions and generates enforcing methods (from the p
   6. Copy `sm.checkAllowedFunction(StateModel.FNC_xyz);` at the beginning of every method xyz
   7. Copy `sm.changeState(StateModel.desired_new_state);` if you want to change state in the code
   8. Enjoy :)
+Optional (additional check of additional state):
+  9. If additional condition for function use is required (e.g., generateKeyPair() can be called only in the state STATE_INSTALLED and when incomming command was send via secure channel), then set the secondary state value using `sm.setSecondaryState(StateModel.secondary_state_value);`
+ 10. Add corresponding codition to `state_model.yml` in the `secondary_state_check:` section
+  
 
 ## Example
 
@@ -41,6 +45,19 @@ class Example implements Applet {
     // Change to new state
     sm.changeState(StateModel.STATE_USER_AUTHENTICATED);
   }
+  
+  void process(APDU apdu) {
+    byte[] buffer = apdu.getBuffer();
+   
+    // Allowed functions can be contioned based on the additional secondary state, e.g., state of secure channel
+    if (secureChannel.isOpen()) {
+      sm.setSecondaryState(StateModel.SECURE_CHANNEL_ESTABLISHED);
+    }
+    else {
+      sm.setSecondaryState(StateModel.CHANNEL_NONE);
+    }  
+    // ... 
+}
 ```
 
 Use example state model examples\simple_state_model.yml
