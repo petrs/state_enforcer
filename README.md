@@ -2,16 +2,44 @@
 Visualize program states transitions and generates enforcing methods (from the provided yaml model) and generates transition checking JavaCard code.
 
 ## Usage
-  1. Prepare yaml file (e.g., state_model.yml) with specification of state transactions and allowed functions
-  2. Run 'state_enforcer.py state_model.yml output_folder_path' (output_folder_path can be directly your source folder )
-  3. Analyze resulting pdf file with visualization (state_model.dot.pdf)
-  4. If happy, include StateModel.java into your project
-  5. Allocate state variable 'StateModel sm = new StateModel(initial_state);'
-  6. Copy 'sm.checkAllowedFunction(StateModel.FNC_xyz);' at the beginning of every method xyz
-  7. Copy 'sm.changeState(StateModel.desired_new_state);' if you want to change state in the code
+  1. Prepare yaml file (e.g., `state_model.yml`) with specification of state transactions and allowed functions
+  2. Run `state_enforcer.py state_model.yml output_folder_path` (output_folder_path can be directly your source folder )
+  3. Analyze resulting pdf file with visualization (`state_model.dot.pdf`)
+  4. If happy, include `StateModel.java` into your project
+  5. Allocate state variable `StateModel sm = new StateModel(initial_state);`
+  6. Copy `sm.checkAllowedFunction(StateModel.FNC_xyz);` at the beginning of every method xyz
+  7. Copy `sm.changeState(StateModel.desired_new_state);` if you want to change state in the code
   8. Enjoy 
 
 ## Example
+
+```java
+class Example implements Applet {
+  StateModel sm;
+
+  Example() {
+    //...
+    sm = new StateModel(StateModel.STATE_APPLET_UPLOADED);
+  }
+ 
+  //...
+  void generateKeyPair() {
+    // Check if function call is allowed in the current state
+    sm.checkAllowedFunction(StateModel.FNC_generateKeyPair);
+    //... do key generation
+
+    // Change to new state
+    sm.changeState(StateModel.STATE_KEYPAIR_GENERATED);
+  }
+  void verifyPIN() {
+    // Check if function call is allowed in the current state -> will fail if not in STATE_KEYPAIR_GENERATED
+    sm.checkAllowedFunction(StateModel.FNC_verifyPIN);
+    //... do pin verification
+
+    // Change to new state
+    sm.changeState(StateModel.STATE_USER_AUTHENTICATED);
+  }
+```
 
 Use example state model examples\simple_state_model.yml
 
@@ -85,31 +113,30 @@ package yourpackage;
 import javacard.framework.ISOException;
 
 public class StateModel {
-
-    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9af0;
-    public static final short SW_UNKNOWNSTATE                           = (short) 0x9af1;
-    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9af2;
-    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9af3;
+    public static final short SW_FUNCTINNOTALLOWED                      = (short) 0x9AF0;
+    public static final short SW_UNKNOWNSTATE                           = (short) 0x9AF1;
+    public static final short SW_UNKNOWNFUNCTION                        = (short) 0x9AF2;
+    public static final short SW_INCORRECTSTATETRANSITION               = (short) 0x9AF3;
 
 
     // States constants
-    public static final short STATE_UNSPECIFIED                         = (short) 0x5050;
-    public static final short CHANNEL_NONE                              = (short) 0x0001;
-    public static final short SECURE_CHANNEL_ESTABLISHED                = (short) 0x0002;
-    public static final short STATE_APPLET_UPLOADED                     = (short) 0x0003;
-    public static final short STATE_CARD_BLOCKED                        = (short) 0x0004;
-    public static final short STATE_INSTALLED                           = (short) 0x0005;
-    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x0006;
-    public static final short STATE_USER_AUTHENTICATED                  = (short) 0x0007;
+    public static final short STATE_UNSPECIFIED                         = (short) 0xF0F0;
+    public static final short CHANNEL_NONE                              = (short) 0x1000; // 0001000000000000
+    public static final short SECURE_CHANNEL_ESTABLISHED                = (short) 0x2000; // 0010000000000000
+    public static final short STATE_APPLET_UPLOADED                     = (short) 0x3000; // 0011000000000000
+    public static final short STATE_CARD_BLOCKED                        = (short) 0x4000; // 0100000000000000
+    public static final short STATE_INSTALLED                           = (short) 0x5000; // 0101000000000000
+    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x6000; // 0110000000000000
+    public static final short STATE_USER_AUTHENTICATED                  = (short) 0x7000; // 0111000000000000
 
     // Functions constants
-    public static final short FNC_blockCard                             = (short) 0x4001;
-    public static final short FNC_generateKeyPair                       = (short) 0x4002;
-    public static final short FNC_getVersion                            = (short) 0x4003;
-    public static final short FNC_install                               = (short) 0x4004;
-    public static final short FNC_reset                                 = (short) 0x4005;
-    public static final short FNC_sign                                  = (short) 0x4006;
-    public static final short FNC_verifyPIN                             = (short) 0x4007;
+    public static final short FNC_blockCard                             = (short) 0x1000; // 0001000000000000
+    public static final short FNC_generateKeyPair                       = (short) 0x2000; // 0010000000000000
+    public static final short FNC_getVersion                            = (short) 0x3000; // 0011000000000000
+    public static final short FNC_install                               = (short) 0x4000; // 0100000000000000
+    public static final short FNC_reset                                 = (short) 0x5000; // 0101000000000000
+    public static final short FNC_sign                                  = (short) 0x6000; // 0110000000000000
+    public static final short FNC_verifyPIN                             = (short) 0x7000; // 0111000000000000
 
 
     private short STATE_CURRENT = STATE_UNSPECIFIED;
