@@ -9,7 +9,7 @@ Visualize program states transitions and generates enforcing methods (from the p
   5. Allocate state variable `StateModel sm = new StateModel(initial_state);`
   6. Copy `sm.checkAllowedFunction(StateModel.FNC_xyz);` at the beginning of every method xyz
   7. Copy `sm.changeState(StateModel.desired_new_state);` if you want to change state in the code
-  8. Enjoy 
+  8. Enjoy :)
 
 ## Example
 
@@ -26,6 +26,7 @@ class Example implements Applet {
   void generateKeyPair() {
     // Check if function call is allowed in the current state
     sm.checkAllowedFunction(StateModel.FNC_generateKeyPair);
+    
     //... do key generation
 
     // Change to new state
@@ -34,6 +35,7 @@ class Example implements Applet {
   void verifyPIN() {
     // Check if function call is allowed in the current state -> will fail if not in STATE_KEYPAIR_GENERATED
     sm.checkAllowedFunction(StateModel.FNC_verifyPIN);
+    
     //... do pin verification
 
     // Change to new state
