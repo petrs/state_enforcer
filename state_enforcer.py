@@ -192,32 +192,30 @@ def generate_java_code(state_model_complete, package_name, out_folder):
 
                 print(fnc)
 
-        print('\n\n')
-
-        value = "\n\n    private short STATE_CURRENT = STATE_UNSPECIFIED;\n\n" \
-                + "    private short STATE_SECONDARY = STATE_UNSPECIFIED;\n\n" \
-                + "" \
+        value = "\n\n    private short STATE_CURRENT = STATE_UNSPECIFIED;\n"
+        if secondary_state_check_model:
+            value +=  "    private short STATE_SECONDARY = STATE_UNSPECIFIED;\n"
+        value +=  "\n" \
                 + "    public StateModel(short startState) {\n" \
                 + "        STATE_CURRENT = startState;\n" \
-                + "    }\n" \
-                + "    \n" \
+                + "    }\n\n" \
                 + "    public void checkAllowedFunction(short requestedFnc) {\n" \
                 + "        // Check allowed function in current state\n" \
-                + "        checkAllowedFunction(requestedFnc, STATE_CURRENT);\n" \
-                + "        // // Check secondary state (if required)\n" \
-                + "        checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);\n" \
-                + "    }\n" \
-                + "    \n" \
+                + "        checkAllowedFunction(requestedFnc, STATE_CURRENT);\n"
+        if secondary_state_check_model:
+            value +=  "        // // Check secondary state (if required)\n" \
+                    + "        checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);\n"
+        value +=  "    }\n\n" \
                 + "    public short changeState(short newState) {\n" \
                 + "        STATE_CURRENT = changeState(STATE_CURRENT, newState);\n" \
                 + "        return STATE_CURRENT;\n" \
-                + "    }\n" \
-                + "    public short setSecondaryState(short newSecondaryState) {\n" \
-                + "        STATE_SECONDARY = newSecondaryState;\n" \
-                + "        return STATE_SECONDARY;\n" \
-                + "    }\n" \
-                + "    \n" \
-                + "    public short getState() {\n" \
+                + "    }\n"
+        if secondary_state_check_model:
+            value +=  "    public short setSecondaryState(short newSecondaryState) {\n" \
+                    + "        STATE_SECONDARY = newSecondaryState;\n" \
+                    + "        return STATE_SECONDARY;\n" \
+                    + "    }\n\n"
+        value +=  "    public short getState() {\n" \
                 + "        return STATE_CURRENT;\n" \
                 + "    }\n\n"
         file.write(value)
@@ -270,68 +268,54 @@ def generate_java_code(state_model_complete, package_name, out_folder):
 
         file.write(value)
 
+        if secondary_state_check_model:
+            # checkAllowedFunctionSecondary
+            value = "    private static void checkAllowedFunctionSecondary(short requestedFnc, short currentSecondaryState) {\n"
+            value += "        // Check for functions which can be called from any state\n" \
+                     + "        switch (requestedFnc) {\n" \
+                     + "            // case FNC_someFunction:  return;    // enable if FNC_someFunction can be called from any state (typical for cleaning instructions)\n"
 
+            anytime_allowed = []
+            if YAML_TAG_ANYTIME_CALL in state_model_special:
+                anytime_allowed = state_model_special[YAML_TAG_ANYTIME_CALL]
 
+            for fnc in sorted(anytime_allowed):
+                value += "            case FNC_{}:  return;\n".format(fnc)
 
+            value += "        }\n\n"
+            file.write(value)
 
+            value = "        // Check if function can be called from current state\n" \
+                    + "        switch (currentSecondaryState) {\n"
+            file.write(value)
 
+            # Allowed functions in a given state
+            for state in sorted(secondary_state_check_model.keys()):
+                # case for current state
+                message = "            case {}:\n".format(state)
+                file.write(message)
 
-        #
-        # checkAllowedFunctionSecondary
-        value = "    private static void checkAllowedFunctionSecondary(short requestedFnc, short currentSecondaryState) {\n"
-        value += "        // Check for functions which can be called from any state\n" \
-                 + "        switch (requestedFnc) {\n" \
-                 + "            // case FNC_someFunction:  return;    // enable if FNC_someFunction can be called from any state (typical for cleaning instructions)\n"
+                fncs_set = set(secondary_state_check_model[state])
+                sorted_fncs = sorted(fncs_set)
+                for function in sorted_fncs:
+                    if len(function) > 0:
+                        message = "{}{}{}{}if (requestedFnc == FNC_{}) return;\n".format(indent, indent, indent, indent, function)
+                        file.write(message)
 
-        anytime_allowed = []
-        if YAML_TAG_ANYTIME_CALL in state_model_special:
-            anytime_allowed = state_model_special[YAML_TAG_ANYTIME_CALL]
+                # end current case
+                message = "                ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state\n" \
+                          + "                break;\n" \
+                          + ""
+                file.write(message)
 
-        for fnc in sorted(anytime_allowed):
-            value += "            case FNC_{}:  return;\n".format(fnc)
+            value = "            default:\n" \
+                    + "                ISOException.throwIt(SW_UNKNOWNSTATE);\n" \
+                    + "                break;\n" \
+                    + "       }\n" \
+                    + "    }\n\n"
 
-        value += "        }\n\n"
-        file.write(value)
+            file.write(value)
 
-        value = "        // Check if function can be called from current state\n" \
-                + "        switch (currentSecondaryState) {\n"
-        file.write(value)
-
-        # Allowed functions in a given state
-        for state in sorted(secondary_state_check_model.keys()):
-            # case for current state
-            message = "            case {}:\n".format(state)
-            file.write(message)
-
-            fncs_set = set(secondary_state_check_model[state])
-            sorted_fncs = sorted(fncs_set)
-            for function in sorted_fncs:
-                if len(function) > 0:
-                    message = "{}{}{}{}if (requestedFnc == FNC_{}) return;\n".format(indent, indent, indent, indent, function)
-                    file.write(message)
-
-            # end current case
-            message = "                ISOException.throwIt(SW_FUNCTINNOTALLOWED); // if reached, function is not allowed in given state\n" \
-                      + "                break;\n" \
-                      + ""
-            file.write(message)
-
-        value = "            default:\n" \
-                + "                ISOException.throwIt(SW_UNKNOWNSTATE);\n" \
-                + "                break;\n" \
-                + "       }\n" \
-                + "    }\n\n"
-
-        file.write(value)
-
-
-
-
-
-
-
-
-        #
         # Allowed state transitions in a given state
         value = "    private static short changeState(short currentState, short newState) {\n"
         value += "        // Check for states which can be reached from any other state (typically some \"cleaning\" state)\n" \
@@ -389,9 +373,6 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         # Footer
         footer = "}\n"
         file.write(footer)
-
-    return
-
 
 def print_help():
     print('state_enforcer, version ' + VERSION)
