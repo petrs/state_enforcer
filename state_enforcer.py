@@ -3,6 +3,7 @@ from graphviz import Digraph
 from graphviz import Graph
 import yaml
 import sys
+import hashlib
 
 VERSION = '2021.05.12'
 
@@ -140,8 +141,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         all_states.sort()
 
         MAX_SHORT = 32768
-        const_step = round(MAX_SHORT / (len(all_states) + 1))
-        const_index = const_step
+        # state constant shall stay same for the same state name even when new state is added
+        # Solution: hash state_name, derive constant from it, check for unlikely collision
+        state_constants_used = {}
         print("INFO: {} unique states found:".format(len(all_states)))
         for state_name in all_states:
             # constant for current state
@@ -151,9 +153,19 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                 message += " "
                 remaining_padd -= 1
 
+            first_two_bytes = hashlib.sha256(bytes(state_name, 'ascii')).digest()[:2]
+            const_index = int.from_bytes(first_two_bytes, signed=False, byteorder='little')
+            if state_constants_used.get(const_index) is not None:
+                # collision, state already used
+                print("ERROR: colliding value for state constant between '{}' and '{}' detected.".format(state_name, state_constants_used.get(const_index)))
+                print("Try to change name for the newly added state.")
+                return
+            # store used constant to prevent future collisions
+            state_constants_used[const_index] = state_name
+            # format constant line declaration
             message += "= (short) 0x{:04X}; // {}\n".format(const_index, f"{const_index:016b}")
+
             file.write(message)
-            const_index += const_step
 
             print(state_name)
 
@@ -195,11 +207,13 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                 print(fnc)
 
         value = "\n\n    private short STATE_CURRENT = STATE_UNSPECIFIED;\n"
+        value += "    private short STATE_PREVIOUS = STATE_UNSPECIFIED;\n"
         if secondary_state_check_model:
             value +=  "    private short STATE_SECONDARY = STATE_UNSPECIFIED;\n"
         value +=  "\n" \
                 + "    public StateModel(short startState) {\n" \
                 + "        STATE_CURRENT = startState;\n" \
+                + "        STATE_PREVIOUS = startState;\n" \
                 + "    }\n\n" \
                 + "    public void checkAllowedFunction(short requestedFnc) {\n" \
                 + "        // Check allowed function in current state\n" \
@@ -209,7 +223,15 @@ def generate_java_code(state_model_complete, package_name, out_folder):
                     + "        checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);\n"
         value +=  "    }\n\n" \
                 + "    public short changeState(short newState) {\n" \
+                + "        short prevState = STATE_CURRENT;\n" \
                 + "        STATE_CURRENT = changeState(STATE_CURRENT, newState);\n" \
+                + "        STATE_PREVIOUS = prevState;\n" \
+                + "        return STATE_CURRENT;\n" \
+                + "    }\n"
+        value +=  "    /** WARNING: this function forces new state despite the state model.**/ \n" \
+                + "    public short forceChangeState(short newState) {\n" \
+                         + "        STATE_PREVIOUS = STATE_CURRENT;\n" \
+                + "        STATE_CURRENT = newState;\n" \
                 + "        return STATE_CURRENT;\n" \
                 + "    }\n"
         if secondary_state_check_model:
@@ -220,6 +242,9 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         value +=  "    public short getState() {\n" \
                 + "        return STATE_CURRENT;\n" \
                 + "    }\n\n"
+        value += "    public short getPreviousState() {\n" \
+                 + "        return STATE_PREVIOUS;\n" \
+                 + "    }\n\n"
         file.write(value)
 
         #
