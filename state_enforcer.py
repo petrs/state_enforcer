@@ -77,6 +77,25 @@ def generate_graph(state_model_complete, state_model_file, out_folder):
                 dot.attr('node', style='filled')
                 dot.edge(start_state, final_state, color='orange', style='dotted')
 
+    #
+    # display secondary state checks
+    #
+    state_model_secondary = []
+    if YAML_TAG_SECONDARY_STATE_CHECK in state_model_complete:
+        state_model_secondary = state_model_complete[YAML_TAG_SECONDARY_STATE_CHECK]
+
+        dot.attr('node', color='lightblue')
+        dot.attr('node', style='filled')
+        secondary_states = 'secondary_states'
+        dot.node(secondary_states)
+        for final_state in state_model_secondary:
+            dot.attr('node', color='black')
+            dot.attr('node', style='solid')
+            dot.edge(secondary_states, final_state, color='orange', style='dotted')
+            for fnc in state_model_secondary[final_state]:
+                label = fnc + '()'
+                dot.edge(final_state, final_state, color='orange', style='invisible', label=label)
+
     # Generate dot graph using GraphViz into pdf
     dot.render('state_model.dot', view=False)
 
@@ -400,6 +419,7 @@ def generate_java_code(state_model_complete, package_name, out_folder):
         # Footer
         footer = "}\n"
         file.write(footer)
+
 
 def print_help():
     print('state_enforcer, version ' + VERSION)
