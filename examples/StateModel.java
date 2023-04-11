@@ -13,13 +13,13 @@ public class StateModel {
 
     // States constants
     public static final short STATE_UNSPECIFIED                         = (short) 0xF0F0;
-    public static final short CHANNEL_NONE                              = (short) 0x1000; // 0001000000000000
-    public static final short SECURE_CHANNEL_ESTABLISHED                = (short) 0x2000; // 0010000000000000
-    public static final short STATE_APPLET_UPLOADED                     = (short) 0x3000; // 0011000000000000
-    public static final short STATE_CARD_BLOCKED                        = (short) 0x4000; // 0100000000000000
-    public static final short STATE_INSTALLED                           = (short) 0x5000; // 0101000000000000
-    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x6000; // 0110000000000000
-    public static final short STATE_USER_AUTHENTICATED                  = (short) 0x7000; // 0111000000000000
+    public static final short CHANNEL_NONE                              = (short) 0x75DB; // 0111010111011011
+    public static final short SECURE_CHANNEL_ESTABLISHED                = (short) 0x51ED; // 0101000111101101
+    public static final short STATE_APPLET_UPLOADED                     = (short) 0x546E; // 0101010001101110
+    public static final short STATE_CARD_BLOCKED                        = (short) 0x4379; // 0100001101111001
+    public static final short STATE_INSTALLED                           = (short) 0xE822; // 1110100000100010
+    public static final short STATE_KEYPAIR_GENERATED                   = (short) 0x89E5; // 1000100111100101
+    public static final short STATE_USER_AUTHENTICATED                  = (short) 0xD67C; // 1101011001111100
 
     // Functions constants
     public static final short FNC_blockCard                             = (short) 0x1000; // 0001000000000000
@@ -32,31 +32,44 @@ public class StateModel {
 
 
     private short STATE_CURRENT = STATE_UNSPECIFIED;
-
+    private short STATE_PREVIOUS = STATE_UNSPECIFIED;
     private short STATE_SECONDARY = STATE_UNSPECIFIED;
 
     public StateModel(short startState) {
         STATE_CURRENT = startState;
+        STATE_PREVIOUS = startState;
     }
-    
+
     public void checkAllowedFunction(short requestedFnc) {
         // Check allowed function in current state
         checkAllowedFunction(requestedFnc, STATE_CURRENT);
         // // Check secondary state (if required)
         checkAllowedFunctionSecondary(requestedFnc, STATE_SECONDARY);
     }
-    
+
     public short changeState(short newState) {
+        short prevState = STATE_CURRENT;
         STATE_CURRENT = changeState(STATE_CURRENT, newState);
+        STATE_PREVIOUS = prevState;
+        return STATE_CURRENT;
+    }
+    /** WARNING: this function forces new state despite the state model.**/ 
+    public short forceChangeState(short newState) {
+        STATE_PREVIOUS = STATE_CURRENT;
+        STATE_CURRENT = newState;
         return STATE_CURRENT;
     }
     public short setSecondaryState(short newSecondaryState) {
         STATE_SECONDARY = newSecondaryState;
         return STATE_SECONDARY;
     }
-    
+
     public short getState() {
         return STATE_CURRENT;
+    }
+
+    public short getPreviousState() {
+        return STATE_PREVIOUS;
     }
 
     private static void checkAllowedFunction(short requestedFnc, short currentState) {
