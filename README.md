@@ -118,7 +118,7 @@ Execute state_enforcer.py which will produce the following files: state_model.do
  
 	state_enforcer.py examples/simple_state_model.yml	
 
-The file [state_model.dot.pdf](examples/state_model.dot.pdf) with visualization is generated (requires [GraphViz](https://graphviz.org) installed)
+The file [state_model.dot.pdf](examples/state_model.dot.pdf) with visualization is generated (requires [GraphViz](https://graphviz.org) installed as Python package `graphviz`, use `pip install graphviz` command.)
 
 <p align="center">
     <img src="examples/simple_state_model.png">
